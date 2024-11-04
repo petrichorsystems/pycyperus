@@ -69,6 +69,7 @@ class _Server():
         self.dispatcher.map('/cyperus/remove/connection', self.osc_remove_connection)
         self.dispatcher.map('/cyperus/list/module', self.osc_list_module)
         self.dispatcher.map('/cyperus/list/module_port', self.osc_list_module_port)
+        self.dispatcher.map('/cyperus/get/system/env_variable', self.osc_get_system_env_variable)
         self.dispatcher.map('/cyperus/add/module/oscillator/sine', self.osc_add_module_oscillator_sine)
         self.dispatcher.map('/cyperus/add/module/envelope/follower', self.osc_add_module_envelope_follower)        
         try:
@@ -256,6 +257,22 @@ class _Server():
                 result_str)
         self.responses[request_id] = args
 
+    def osc_get_system_env_variable(self,
+                                    path,
+                                    request_id,
+                                    errno,
+                                    multipart,
+                                    var_name,
+                                    env_variable):
+        if request_id not in self.submitted_requests:
+            return        
+        print("received '/cyperus/get/system/env_variable'")
+        args = (errno,
+                multipart,
+                var_name,
+                env_variable)
+        self.responses[request_id] = args
+        
     def osc_add_module_oscillator_sine(self,
                                        path,
                                        request_id,
@@ -658,6 +675,25 @@ class _Client():
                 })
         return module_ports
 
+    def get_system_env_variable(self, var_name, blocking=True):
+        request_id = self._request(
+            "/cyperus/get/system/env_variable",
+            var_name
+        )
+        
+        if not blocking:
+            response = self._get_response_nonblocking(request_id)
+        else:
+            response = self._get_response_blocking(request_id)
+            
+        if not response:
+            return None
+            
+        errno = response[1]
+        if errno:
+            raise Exception(f"{errno} found, error!")        
+        return response[-1]
+    
     def add_modules_oscillator_sine(self,
                                     bus_id,
                                     frequency,
@@ -866,6 +902,9 @@ class Api():
             )        
         return self.client.list_module_port(module_id)
 
+    def get_system_env_variable(self, var_name):
+        return self.client.get_system_env_variable(var_name)
+    
     def add_modules_oscillator_sine(self,
                                     bus_id,
                                     frequency,
