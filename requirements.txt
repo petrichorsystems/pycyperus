@@ -1,2 +1,2 @@
-websockets==10.0
+setuptools
 python-osc==1.9.0
